@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Day Book — Pub Ledger</title>
+
+<!-- PWA: makes this installable from the browser ("Add to Home Screen") -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B2417">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Day Book">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <div>
+      <h1>The Day Book</h1>
+      <div class="sub">Daily stock &amp; cash ledger</div>
+    </div>
+    <div class="date-box">
+      <label for="dateInput">Trading day</label>
+      <input type="date" id="dateInput">
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="day" class="active">Day Sheet</button>
+    <button data-tab="inventory">Stock Setup</button>
+    <button data-tab="debts">Debts</button>
+    <button data-tab="history">Sales History</button>
+    <button data-tab="balance">Balance Sheet</button>
+  </nav>
+
+  <div id="installBanner" style="display:none;"></div>
+
+  <div id="dayTab"></div>
+  <div id="inventoryTab" style="display:none"></div>
+  <div id="debtsTab" style="display:none"></div>
+  <div id="historyTab" style="display:none"></div>
+  <div id="balanceTab" style="display:none"></div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
