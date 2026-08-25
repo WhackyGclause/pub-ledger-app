@@ -74,7 +74,11 @@ function blankDay(date) {
   return {
     date,
     shifts: [],
-    cash: { openingCash: 0, closingCash: 0, mpesaCashIn: 0 },
+    cash: {
+      openingCash: 0, closingCash: 0, mpesaCashIn: 0,
+      poolGames: 0, poolRate: 20, openingPoolCoins: 0,
+      closingPoolCoins: 0, poolCoinExchanges: 0
+    },
     stock: {},
     previousStock: {},
     previousStockRecordedAt: null,
@@ -142,7 +146,12 @@ async function getDay(date) {
     day.cash = {
       openingCash: Number(cashRes.data.opening_cash),
       closingCash: Number(cashRes.data.closing_cash),
-      mpesaCashIn: Number(cashRes.data.mpesa_cash_in) || 0
+      mpesaCashIn: Number(cashRes.data.mpesa_cash_in) || 0,
+      poolGames: Number(cashRes.data.pool_games) || 0,
+      poolRate: Number(cashRes.data.pool_rate) || 20,
+      openingPoolCoins: Number(cashRes.data.opening_pool_coins) || 0,
+      closingPoolCoins: Number(cashRes.data.closing_pool_coins) || 0,
+      poolCoinExchanges: Number(cashRes.data.pool_coin_exchanges) || 0
     };
   }
 
@@ -220,7 +229,12 @@ async function saveDay(date, payload) {
       day_date: date,
       opening_cash: Number(cash.openingCash) || 0,
       closing_cash: Number(cash.closingCash) || 0,
-      mpesa_cash_in: Number(cash.mpesaCashIn) || 0
+      mpesa_cash_in: Number(cash.mpesaCashIn) || 0,
+      pool_games: Number(cash.poolGames) || 0,
+      pool_rate: Number(cash.poolRate) || 20,
+      opening_pool_coins: Number(cash.openingPoolCoins) || 0,
+      closing_pool_coins: Number(cash.closingPoolCoins) || 0,
+      pool_coin_exchanges: Number(cash.poolCoinExchanges) || 0
     },
     { onConflict: 'day_date' }
   );

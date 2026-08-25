@@ -185,10 +185,12 @@ function computeSummary(day, items, debtDay) {
     totalRevenue += sold * it.sellingPrice;
     totalCost += sold * it.buyingPrice;
   });
+  const cash = day.cash || {};
+  const poolRevenue = (Number(cash.poolGames) || 0) * (Number(cash.poolRate) || 0);
+  totalRevenue += poolRevenue;
   const totalExpenses = (day.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0);
   const netProfit = totalRevenue - totalCost - totalExpenses;
 
-  const cash = day.cash || {};
   const actualInflow =
     ((Number(cash.closingCash) || 0) - (Number(cash.openingCash) || 0)) +
     (Number(cash.mpesaCashIn) || 0);
@@ -207,6 +209,7 @@ function computeSummary(day, items, debtDay) {
   return {
     date: day.date,
     totalRevenue,
+    poolRevenue,
     totalCost,
     totalExpenses,
     netProfit,

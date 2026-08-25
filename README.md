@@ -23,6 +23,10 @@ tier) — no login required, reachable from anywhere once deployed.
 - **Expenses** — logged right on the Day Sheet (rent, transport, repairs,
   etc.), automatically subtracted from Net Profit, and kept as a running
   record for reference.
+- **Pool table** — records games played and the price per game as separate
+  revenue, while tracking the opening/closing Ksh 20 coin float and coin
+  exchanges. Coin exchanges change denominations only and do not affect
+  income or expenses.
 - **Stock Setup** — items have fixed prices set once. Tobacco Snuff and Khat
   use only a selling price; Liquor, Soft Drinks, Cigarettes and Nuts use both
   buying and selling prices. Every day sheet reuses these automatically.
@@ -36,7 +40,7 @@ tier) — no login required, reachable from anywhere once deployed.
 
 ```
 Net Profit          = Stock Revenue − Stock Cost − Expenses
-Expected Collections = Stock Revenue − New Credit Given + Credit Repaid − Expenses
+Expected Collections = Stock Revenue + Pool Revenue − New Credit Given + Credit Repaid − Expenses
 Discrepancy          = (Actual Cash+M-Pesa Collected) − Expected Collections
 ```
 

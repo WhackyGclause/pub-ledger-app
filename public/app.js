@@ -158,7 +158,9 @@ function computeDayTotals(day, debtDay){
   const totalExpenses = (day.expenses||[]).reduce((s,e)=> s + (Number(e.amount)||0), 0);
   const netProfit = totalRevenue - totalCost - totalExpenses;
 
-  const cash = day.cash || {openingCash:0,closingCash:0,mpesaCashIn:0};
+  const cash = day.cash || {openingCash:0,closingCash:0,mpesaCashIn:0,poolGames:0,poolRate:20,openingPoolCoins:0,closingPoolCoins:0,poolCoinExchanges:0};
+  const poolRevenue = (Number(cash.poolGames)||0) * (Number(cash.poolRate)||0);
+  totalRevenue += poolRevenue;
   const actualInflow = ((Number(cash.closingCash)||0) - (Number(cash.openingCash)||0)) + (Number(cash.mpesaCashIn)||0);
 
   const newCredit = Number(debtDay.newCredit)||0;
@@ -168,7 +170,7 @@ function computeDayTotals(day, debtDay){
 
   const totalBalance = Number(cash.closingCash)||0;
   const totalHours = (day.shifts||[]).reduce((s,p)=> s + getShiftHours(p), 0);
-  return {lines, totalRevenue, totalCost, totalExpenses, netProfit, newCredit, repayments, expectedInflow, actualInflow, discrepancy, totalBalance, totalHours};
+  return {lines, totalRevenue, poolRevenue, totalCost, totalExpenses, netProfit, newCredit, repayments, expectedInflow, actualInflow, discrepancy, totalBalance, totalHours};
 }
 
 // ---------- Rendering: Day Sheet ----------
@@ -250,6 +252,16 @@ function renderDayTab(){
         <div class="field"><label>Closing cash</label><input type="number" id="closingCash" value="${currentDay.cash.closingCash||0}" onfocus="this.select()"></div>
         <div class="field"><label>M-Pesa cash in from messages</label><input type="number" min="0" id="mpesaCashIn" value="${currentDay.cash.mpesaCashIn||0}" onfocus="this.select()"></div>
       </div>
+      <h3>Pool table</h3>
+      <div class="grid-2">
+        <div class="field"><label>Games played</label><input type="number" min="0" step="1" id="poolGames" value="${currentDay.cash.poolGames||0}" onfocus="this.select()"></div>
+        <div class="field"><label>Price per game</label><input type="number" min="0" step="any" id="poolRate" value="${currentDay.cash.poolRate ?? 20}" onfocus="this.select()"></div>
+        <div class="field"><label>Opening Ksh 20 coin float</label><input type="number" min="0" step="any" id="openingPoolCoins" value="${currentDay.cash.openingPoolCoins||0}" onfocus="this.select()"></div>
+        <div class="field"><label>Closing Ksh 20 coin float</label><input type="number" min="0" step="any" id="closingPoolCoins" value="${currentDay.cash.closingPoolCoins||0}" onfocus="this.select()"></div>
+        <div class="field"><label>Coin exchanges/restocking</label><input type="number" min="0" step="any" id="poolCoinExchanges" value="${currentDay.cash.poolCoinExchanges||0}" onfocus="this.select()"></div>
+        <div class="field"><label>Pool revenue</label><span class="computed" id="poolRevenueVal">${fmt(totals.poolRevenue)}</span></div>
+      </div>
+      <p class="save-status" style="margin-top:8px;">Coin exchanges only change denominations and are not counted as income or expenses.</p>
     </div>
 
     <div class="card">
@@ -266,6 +278,7 @@ function renderDayTab(){
       <h2><span class="eyebrow">Summary</span> ${currentDay.date}</h2>
       <div class="summary-grid">
         <div class="summary-item"><div class="label">Total revenue</div><div class="value" id="totalRevenueVal">${fmt(totals.totalRevenue)}</div></div>
+        <div class="summary-item"><div class="label">Pool revenue</div><div class="value" id="poolRevenueSummaryVal">${fmt(totals.poolRevenue)}</div></div>
         <div class="summary-item"><div class="label">Total cost</div><div class="value" id="totalCostVal">${fmt(totals.totalCost)}</div></div>
         <div class="summary-item"><div class="label">Total expenses</div><div class="value" id="totalExpensesVal">${fmt(totals.totalExpenses)}</div></div>
         <div class="summary-item"><div class="label">Net profit</div><div class="value ${totals.netProfit<0?'neg':'pos'}" id="netProfitVal">${fmt(totals.netProfit)}</div></div>
@@ -325,7 +338,7 @@ function renderDayTab(){
     currentDay.stockRecordedAt = ev.target.value ? new Date(ev.target.value).toISOString() : null;
   };
 
-  ['openingCash','closingCash','mpesaCashIn'].forEach(id=>{
+  ['openingCash','closingCash','mpesaCashIn','poolGames','poolRate','openingPoolCoins','closingPoolCoins','poolCoinExchanges'].forEach(id=>{
     document.getElementById(id).oninput = (ev)=>{ currentDay.cash[id] = ev.target.value; updateDayComputedUI(); };
   });
 
@@ -355,6 +368,8 @@ function updateDayComputedUI(){
 
   setText('totalHoursVal', fmt(totals.totalHours));
   setText('totalRevenueVal', fmt(totals.totalRevenue));
+  setText('poolRevenueVal', fmt(totals.poolRevenue));
+  setText('poolRevenueSummaryVal', fmt(totals.poolRevenue));
   setText('totalCostVal', fmt(totals.totalCost));
   setText('totalExpensesVal', fmt(totals.totalExpenses));
   setText('totalExpensesVal2', fmt(totals.totalExpenses));
