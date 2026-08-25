@@ -189,8 +189,8 @@ function renderDayTab(){
     <tr data-item="${l.item.id}">
       <td class="name-cell">${escapeHtml(l.item.name)}<br><span class="category-tag">${l.item.category}</span></td>
       <td class="num-col"><input type="number" min="0" class="in-opening" value="${l.e.opening}" readonly title="Automatically taken from the previous stock close"></td>
-      <td class="num-col"><input type="number" min="0" class="in-added" value="${l.e.added}" onfocus="this.select()"></td>
-      <td class="num-col"><input type="number" min="0" class="in-closing" value="${l.e.closing}" onfocus="this.select()"></td>
+      <td class="num-col"><input type="number" min="0" step="any" class="in-added" value="${l.e.added}" onfocus="this.select()"></td>
+      <td class="num-col"><input type="number" min="0" step="any" class="in-closing" value="${l.e.closing}" onfocus="this.select()"></td>
       <td class="computed ${l.sold<0?'neg':''}" id="sold-${l.item.id}">${l.sold}</td>
       <td class="computed">${fmt(l.item.buyingPrice)}</td>
       <td class="computed">${fmt(l.item.sellingPrice)}</td>

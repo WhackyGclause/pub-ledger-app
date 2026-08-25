@@ -15,6 +15,16 @@ function isNonNegativeNumber(value) {
   return value !== '' && value != null && Number.isFinite(Number(value)) && Number(value) >= 0;
 }
 
+function firstInvalidStockField(stock) {
+  for (const [itemId, entry] of Object.entries(stock)) {
+    if (!entry) return `${itemId}: missing stock entry`;
+    for (const field of ['opening', 'added', 'closing']) {
+      if (!isNonNegativeNumber(entry[field])) return `${itemId}: ${field} must be a non-negative number`;
+    }
+  }
+  return null;
+}
+
 function isDate(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
 }
@@ -72,10 +82,10 @@ app.get('/api/days/:date', asyncRoute(async (req, res) => {
 app.put('/api/days/:date', asyncRoute(async (req, res) => {
   if (!isDate(req.params.date)) return res.status(400).json({ error: 'Invalid date; use YYYY-MM-DD' });
   const payload = req.body || {};
-  const stockValues = Object.values(payload.stock || {});
   const cashValues = Object.values(payload.cash || {});
-  if (stockValues.some(entry => !entry || ['opening', 'added', 'closing'].some(field => !isNonNegativeNumber(entry[field])))) {
-    return res.status(400).json({ error: 'Stock quantities must be non-negative numbers' });
+  const invalidStockField = firstInvalidStockField(payload.stock || {});
+  if (invalidStockField) {
+    return res.status(400).json({ error: `Stock quantity error (${invalidStockField})` });
   }
   if (cashValues.some(value => !isNonNegativeNumber(value))) {
     return res.status(400).json({ error: 'Cash values must be non-negative numbers' });
