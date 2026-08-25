@@ -11,6 +11,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const CATEGORIES = ['Liquor', 'Tobacco Snuff', 'Khat', 'Soft Drinks'];
 
+function isNonNegativeNumber(value) {
+  return value !== '' && value != null && Number.isFinite(Number(value)) && Number(value) >= 0;
+}
+
+function isDate(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+}
+
 // Small helper so we don't repeat try/catch in every route.
 function asyncRoute(fn) {
   return (req, res) => fn(req, res).catch(err => {
@@ -34,8 +42,8 @@ app.get('/api/categories', (req, res) => {
 
 app.post('/api/items', asyncRoute(async (req, res) => {
   const { name, category, buyingPrice, sellingPrice } = req.body;
-  if (!name || buyingPrice == null || sellingPrice == null) {
-    return res.status(400).json({ error: 'name, buyingPrice and sellingPrice are required' });
+  if (!String(name || '').trim() || !isNonNegativeNumber(buyingPrice) || !isNonNegativeNumber(sellingPrice)) {
+    return res.status(400).json({ error: 'Enter a name and non-negative buying and selling prices' });
   }
   const item = await db.createItem({ name, category, buyingPrice, sellingPrice });
   res.status(201).json(item);
@@ -57,10 +65,21 @@ app.delete('/api/items/:id', asyncRoute(async (req, res) => {
 // ---------------------------------------------------------------------
 
 app.get('/api/days/:date', asyncRoute(async (req, res) => {
+  if (!isDate(req.params.date)) return res.status(400).json({ error: 'Invalid date; use YYYY-MM-DD' });
   res.json(await db.getDay(req.params.date));
 }));
 
 app.put('/api/days/:date', asyncRoute(async (req, res) => {
+  if (!isDate(req.params.date)) return res.status(400).json({ error: 'Invalid date; use YYYY-MM-DD' });
+  const payload = req.body || {};
+  const stockValues = Object.values(payload.stock || {});
+  const cashValues = Object.values(payload.cash || {});
+  if (stockValues.some(entry => !entry || ['opening', 'added', 'closing'].some(field => !isNonNegativeNumber(entry[field])))) {
+    return res.status(400).json({ error: 'Stock quantities must be non-negative numbers' });
+  }
+  if (cashValues.some(value => !isNonNegativeNumber(value))) {
+    return res.status(400).json({ error: 'Cash values must be non-negative numbers' });
+  }
   res.json(await db.saveDay(req.params.date, req.body));
 }));
 

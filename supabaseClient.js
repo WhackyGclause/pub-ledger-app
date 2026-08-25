@@ -10,6 +10,9 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     '   Copy .env.example to .env and fill in your project values.'
   );
 }
+if (process.env.SUPABASE_SERVICE_KEY && process.env.SUPABASE_SERVICE_KEY.startsWith('sb_publishable')) {
+  console.warn('⚠️  SUPABASE_SERVICE_KEY is a publishable key. Use the Supabase secret/service_role key so the backend can write data.');
+}
 
 // IMPORTANT: this uses the SERVICE ROLE (secret) key, which bypasses Row
 // Level Security. It must only ever be used here, on the backend. Never

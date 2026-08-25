@@ -181,7 +181,7 @@ function renderDayTab(){
       <td class="computed" id="revenue-${l.item.id}">${fmt(l.revenue)}</td>
       <td class="computed ${l.revenue-l.cost<0?'neg':''}" id="profit-${l.item.id}">${fmt(l.revenue-l.cost)}</td>
     </tr>
-  `).join('') || '<tr><td colspan="9" class="empty-note">No items yet — add stock items in the "Stock Setup" tab first.</td></tr>';
+  `).join('') || '<tr><td colspan="9" class="empty-note">No items yet. <button class="btn ghost small" id="openInventoryBtn">Open Stock Setup</button> to add your first item.</td></tr>';
 
   const expenseRows = (currentDay.expenses||[]).map((ex, idx)=>`
     <div class="staff-row" data-idx="${idx}">
@@ -265,6 +265,8 @@ function renderDayTab(){
     currentDay.shifts.push({name:'', timeIn:'', timeOut:'', hours:0});
     renderDayTab();
   };
+  const openInventoryBtn = document.getElementById('openInventoryBtn');
+  if(openInventoryBtn) openInventoryBtn.onclick = ()=> switchTab('inventory');
   document.querySelectorAll('.remove-staff').forEach(btn=>{
     btn.onclick = (e)=>{
       const idx = Number(e.target.closest('.staff-row').dataset.idx);
@@ -418,8 +420,8 @@ function renderInventoryTab(){
     const buyingPrice = document.getElementById('newItemBuy').value;
     const sellingPrice = document.getElementById('newItemSell').value;
     const statusEl = document.getElementById('invSaveStatus');
-    if(!name || buyingPrice==='' || sellingPrice===''){
-      statusEl.textContent = 'Please fill in name, buying price and selling price.';
+    if(!name || buyingPrice==='' || sellingPrice==='' || Number(buyingPrice)<0 || Number(sellingPrice)<0){
+      statusEl.textContent = 'Enter a name and non-negative buying and selling prices.';
       return;
     }
     statusEl.textContent = 'Saving…';
@@ -428,7 +430,10 @@ function renderInventoryTab(){
       await loadInventory();
       renderInventoryTab();
     }catch(e){
-      statusEl.textContent = 'Failed: '+e.message;
+      const hint = /row-level security|permission denied/i.test(e.message)
+        ? ' Check that the backend uses your Supabase secret/service_role key, not the publishable key.'
+        : '';
+      statusEl.textContent = 'Failed: '+e.message+hint;
     }
   };
 }
@@ -683,8 +688,12 @@ document.getElementById('dateInput').addEventListener('change', async (e)=>{
 
 // ---------- Init ----------
 (async function init(){
-  document.getElementById('dateInput').value = currentDate;
-  await loadInventory();
-  await loadDay(currentDate);
-  renderDayTab();
+  try{
+    document.getElementById('dateInput').value = currentDate;
+    await loadInventory();
+    await loadDay(currentDate);
+    renderDayTab();
+  }catch(e){
+    document.getElementById('dayTab').innerHTML = `<div class="card"><div class="empty-note">Unable to load the ledger: ${escapeHtml(e.message)}. Check the server and Supabase connection, then reload.</div></div>`;
+  }
 })();
