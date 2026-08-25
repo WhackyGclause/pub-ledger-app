@@ -6,7 +6,7 @@
 // them could show a stale balance sheet, which is worse than no offline
 // support at all.
 
-const CACHE_NAME = 'day-book-shell-v2';
+const CACHE_NAME = 'day-book-shell-v3';
 const SHELL_FILES = [
   '/',
   '/index.html',
