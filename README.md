@@ -9,7 +9,7 @@ tier) — no login required, reachable from anywhere once deployed.
 
 - **Day Sheet** — record staff on shift with their shift **start and end
   time** (hours worked are calculated automatically, including overnight
-  shifts), opening/added/closing stock for every counter item (liquor, both
+  shifts), the manually entered date and time for each stock close, opening stock automatically carried from the previous close, and opening/added/closing stock for every counter item (liquor, both
   snuff types, khat, soft drinks), daily expenses, and opening/closing cash
   and M-Pesa cash-in messages. Revenue, cost, expenses, net profit and cash balance
   are calculated automatically.
@@ -69,8 +69,9 @@ npm -v
    > and only adds columns that don't already exist
    > (`add column if not exists`), so it's always safe to paste and re-run
    > the whole file again — it'll add whatever's new (e.g. `day_expenses`,
-   > `debts`, `debt_payments`, or the `time_in`/`time_out` columns on
-   > `day_shifts`) without touching your existing data.
+  > `debts`, `debt_payments`, or the `time_in`/`time_out` and full timestamp
+  > columns on `day_shifts`, or the `recorded_at` column on `stock_entries`)
+  > without touching your existing data.
 4. Go to **Settings → API** (or **Settings → API Keys** on newer projects).
    You need two values:
    - **Project URL** — looks like `https://xxxxx.supabase.co`

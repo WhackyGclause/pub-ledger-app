@@ -76,16 +76,46 @@ function blankDay(date) {
     shifts: [],
     cash: { openingCash: 0, closingCash: 0, mpesaCashIn: 0 },
     stock: {},
+    previousStock: {},
+    previousStockRecordedAt: null,
     expenses: []
   };
 }
 
+async function getPreviousStock(date) {
+  const { data, error } = await supabase
+    .from('stock_entries')
+    .select('item_id, closing, recorded_at, day_date')
+    .lt('day_date', date)
+    .order('day_date', { ascending: false })
+    .order('recorded_at', { ascending: false });
+  if (error) throw error;
+
+  const previousStock = {};
+  let previousStockRecordedAt = null;
+  (data || []).forEach(row => {
+    if (Object.prototype.hasOwnProperty.call(previousStock, row.item_id)) return;
+    previousStock[row.item_id] = Number(row.closing);
+    if (!previousStockRecordedAt && row.recorded_at) {
+      previousStockRecordedAt = new Date(row.recorded_at).toISOString();
+    }
+  });
+  return { previousStock, previousStockRecordedAt };
+}
+
+function intervalHours(start, end) {
+  if (!start || !end) return 0;
+  const hours = (new Date(end).getTime() - new Date(start).getTime()) / 3600000;
+  return Number.isFinite(hours) && hours >= 0 ? Math.round(hours * 100) / 100 : 0;
+}
+
 async function getDay(date) {
-  const [shiftsRes, cashRes, stockRes, expensesRes] = await Promise.all([
+  const [shiftsRes, cashRes, stockRes, expensesRes, previous] = await Promise.all([
     supabase.from('day_shifts').select('*').eq('day_date', date),
     supabase.from('day_cash').select('*').eq('day_date', date).maybeSingle(),
     supabase.from('stock_entries').select('*').eq('day_date', date),
-    supabase.from('day_expenses').select('*').eq('day_date', date)
+    supabase.from('day_expenses').select('*').eq('day_date', date),
+    getPreviousStock(date)
   ]);
   if (shiftsRes.error) throw shiftsRes.error;
   if (cashRes.error) throw cashRes.error;
@@ -93,11 +123,19 @@ async function getDay(date) {
   if (expensesRes.error) throw expensesRes.error;
 
   const day = blankDay(date);
+  day.previousStock = previous.previousStock;
+  day.previousStockRecordedAt = previous.previousStockRecordedAt;
+  const firstStockRow = (stockRes.data || [])[0];
+  day.stockRecordedAt = firstStockRow && firstStockRow.recorded_at
+    ? new Date(firstStockRow.recorded_at).toISOString()
+    : null;
   day.shifts = (shiftsRes.data || []).map(r => ({
     name: r.staff_name,
     hours: Number(r.hours),
     timeIn: r.time_in ? String(r.time_in).slice(0, 5) : '',
-    timeOut: r.time_out ? String(r.time_out).slice(0, 5) : ''
+    timeOut: r.time_out ? String(r.time_out).slice(0, 5) : '',
+    timeInAt: r.time_in_at ? new Date(r.time_in_at).toISOString() : null,
+    timeOutAt: r.time_out_at ? new Date(r.time_out_at).toISOString() : null
   }));
 
   if (cashRes.data) {
@@ -112,7 +150,8 @@ async function getDay(date) {
     day.stock[r.item_id] = {
       opening: Number(r.opening),
       added: Number(r.added),
-      closing: Number(r.closing)
+      closing: Number(r.closing),
+      recordedAt: r.recorded_at ? new Date(r.recorded_at).toISOString() : null
     };
   });
 
@@ -130,6 +169,12 @@ async function saveDay(date, payload) {
   const shifts = payload.shifts || [];
   const cash = payload.cash || {};
   const stock = payload.stock || {};
+  const requestedStockRecordedAt = payload.stockRecordedAt ? new Date(payload.stockRecordedAt) : null;
+  const stockRecordedAt = requestedStockRecordedAt && !Number.isNaN(requestedStockRecordedAt.getTime())
+    ? requestedStockRecordedAt.toISOString()
+    : null;
+  if (!stockRecordedAt) throw new Error('Enter a valid stock close date and time');
+  const previous = await getPreviousStock(date);
   const expenses = payload.expenses || [];
 
   // Replace this day's shifts wholesale (simplest way to handle add/remove/edit).
@@ -141,9 +186,11 @@ async function saveDay(date, payload) {
     .map(s => ({
       day_date: date,
       staff_name: s.name,
-      hours: Number(s.hours) || 0,
-      time_in: s.timeIn || null,
-      time_out: s.timeOut || null
+      hours: previous.previousStockRecordedAt ? intervalHours(previous.previousStockRecordedAt, stockRecordedAt) : (Number(s.hours) || 0),
+      time_in: previous.previousStockRecordedAt ? new Date(previous.previousStockRecordedAt).toISOString().slice(11, 16) : (s.timeIn || null),
+      time_out: new Date(stockRecordedAt).toISOString().slice(11, 16),
+      time_in_at: previous.previousStockRecordedAt,
+      time_out_at: stockRecordedAt
     }));
   if (shiftRows.length) {
     const insShifts = await supabase.from('day_shifts').insert(shiftRows);
@@ -183,9 +230,12 @@ async function saveDay(date, payload) {
   const stockRows = Object.entries(stock).map(([itemId, e]) => ({
     day_date: date,
     item_id: itemId,
-    opening: Number(e.opening) || 0,
+    opening: Object.prototype.hasOwnProperty.call(previous.previousStock, itemId)
+      ? previous.previousStock[itemId]
+      : Number(e.opening) || 0,
     added: Number(e.added) || 0,
-    closing: Number(e.closing) || 0
+    closing: Number(e.closing) || 0,
+    recorded_at: stockRecordedAt
   }));
   if (stockRows.length) {
     const stockUpsert = await supabase

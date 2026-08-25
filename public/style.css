@@ -91,6 +91,7 @@ input[type=number], input[type=text], input[type=time]{
   width:100%;padding:5px 6px;border:1px solid var(--paper-line);border-radius:3px;
   background:#fffdf7;font-family:'IBM Plex Mono',monospace;font-size:0.85rem;color:var(--text);
 }
+input[readonly]{background:var(--paper-alt);color:var(--text-muted);}
 input[type=text].item-name{font-family:'Inter',sans-serif;}
 select{padding:5px 6px;border:1px solid var(--paper-line);border-radius:3px;background:#fffdf7;font-family:'Inter',sans-serif;font-size:0.85rem;}
 .num-col{width:80px;}
@@ -112,6 +113,9 @@ select{padding:5px 6px;border:1px solid var(--paper-line);border-radius:3px;back
 .btn.danger:hover{background:rgba(162,59,46,0.08);}
 
 .row-actions{display:flex;gap:8px;margin-top:10px;align-items:center;}
+.recording-meta{display:flex;align-items:flex-end;gap:14px;margin:-4px 0 14px;padding:10px 12px;background:rgba(192,138,40,0.09);border-left:3px solid var(--brass);}
+.recording-meta .field{max-width:280px;flex:1;}
+.staff-interval span{font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:var(--text-muted);padding:5px 0;}
 
 .staff-row{display:flex;gap:10px;align-items:center;margin-bottom:8px;}
 .staff-row input[type=text]{flex:2;}
@@ -161,4 +165,5 @@ select{padding:5px 6px;border:1px solid var(--paper-line);border-radius:3px;back
 @media (max-width:640px){
   .grid-2{grid-template-columns:1fr;}
   .masthead h1{font-size:1.5rem;}
+  .recording-meta{align-items:stretch;flex-direction:column;gap:6px;}
 }

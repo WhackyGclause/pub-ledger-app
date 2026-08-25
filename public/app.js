@@ -1,6 +1,16 @@
 // app.js — frontend logic. Talks to the Express backend via fetch().
 
 function todayStr(){ return new Date().toISOString().slice(0,10); }
+function localDateTimeValue(date){
+  const d = date instanceof Date ? date : new Date(date);
+  if(Number.isNaN(d.getTime())) return '';
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function displayDateTime(value){
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? 'Not recorded' : d.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+}
 function fmt(n){ return (Math.round((n||0)*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -104,8 +114,12 @@ async function loadInventory(){
 }
 async function loadDay(date){
   currentDay = await apiGet('/days/'+date);
+  if(!currentDay.stockRecordedAt) currentDay.stockRecordedAt = new Date().toISOString();
   inventory.forEach(it=>{
     if(!currentDay.stock[it.id]) currentDay.stock[it.id] = {opening:0, added:0, closing:0};
+    if(Object.prototype.hasOwnProperty.call(currentDay.previousStock || {}, it.id)){
+      currentDay.stock[it.id].opening = currentDay.previousStock[it.id];
+    }
   });
   if(!currentDay.expenses) currentDay.expenses = [];
   try{
@@ -118,8 +132,10 @@ async function saveDay(){
   const statusEl = document.getElementById('saveStatus');
   if(statusEl) statusEl.textContent = 'Saving…';
   try{
-    await apiPut('/days/'+currentDay.date, currentDay);
-    if(statusEl) statusEl.textContent = 'Saved ✓ ' + new Date().toLocaleTimeString();
+    currentDay = await apiPut('/days/'+currentDay.date, currentDay);
+    renderDayTab();
+    const savedStatusEl = document.getElementById('saveStatus');
+    if(savedStatusEl) savedStatusEl.textContent = 'Stock closed and saved ✓ ' + displayDateTime(currentDay.stockRecordedAt);
   }catch(e){
     if(statusEl) statusEl.textContent = 'Save failed — ' + e.message;
   }
@@ -162,8 +178,8 @@ function renderDayTab(){
   const staffRows = (currentDay.shifts||[]).map((p, idx)=>`
     <div class="staff-row" data-idx="${idx}">
       <input type="text" class="staff-name" placeholder="Staff name" value="${escapeHtml(p.name||'')}" style="flex:2;">
-      <div class="field" style="flex:1;"><label>Time in</label><input type="time" class="staff-timein" value="${p.timeIn||''}"></div>
-      <div class="field" style="flex:1;"><label>Time out</label><input type="time" class="staff-timeout" value="${p.timeOut||''}"></div>
+      <div class="field staff-interval" style="flex:2;"><label>Time in (last stock close)</label><span>${displayDateTime(p.timeInAt || currentDay.previousStockRecordedAt)}</span></div>
+      <div class="field staff-interval" style="flex:2;"><label>Time out (this stock close)</label><span>${displayDateTime(p.timeOutAt || currentDay.stockRecordedAt)}</span></div>
       <span class="computed" id="staffHours-${idx}" style="white-space:nowrap;">${fmt(getShiftHours(p))} hrs</span>
       <button class="btn danger small remove-staff">Remove</button>
     </div>
@@ -172,7 +188,7 @@ function renderDayTab(){
   const stockRows = totals.lines.map(l=>`
     <tr data-item="${l.item.id}">
       <td class="name-cell">${escapeHtml(l.item.name)}<br><span class="category-tag">${l.item.category}</span></td>
-      <td class="num-col"><input type="number" min="0" class="in-opening" value="${l.e.opening}" onfocus="this.select()"></td>
+      <td class="num-col"><input type="number" min="0" class="in-opening" value="${l.e.opening}" readonly title="Automatically taken from the previous stock close"></td>
       <td class="num-col"><input type="number" min="0" class="in-added" value="${l.e.added}" onfocus="this.select()"></td>
       <td class="num-col"><input type="number" min="0" class="in-closing" value="${l.e.closing}" onfocus="this.select()"></td>
       <td class="computed ${l.sold<0?'neg':''}" id="sold-${l.item.id}">${l.sold}</td>
@@ -207,6 +223,13 @@ function renderDayTab(){
 
     <div class="card">
       <h2><span class="eyebrow">Counter</span> Stock movement</h2>
+      <div class="recording-meta">
+        <div class="field">
+          <label for="stockRecordedAt">Stock close date and time</label>
+          <input type="datetime-local" id="stockRecordedAt" value="${localDateTimeValue(currentDay.stockRecordedAt)}">
+        </div>
+        <span class="save-status">Opening stock: ${currentDay.previousStockRecordedAt ? `from the last close at ${displayDateTime(currentDay.previousStockRecordedAt)}` : 'no previous close recorded yet'}</span>
+      </div>
       <div style="overflow-x:auto;">
       <table>
         <thead><tr>
@@ -255,7 +278,7 @@ function renderDayTab(){
       <div class="stamp-wrap" id="stampWrap"><div class="stamp ${discClass}">${discLabel}</div></div>
       <div class="save-bar">
         <span class="save-status" id="saveStatus"></span>
-        <button class="btn brass" id="saveDayBtn">Save this day</button>
+        <button class="btn brass" id="saveDayBtn">Save stock close</button>
       </div>
     </div>
   `;
@@ -274,17 +297,6 @@ function renderDayTab(){
     };
   });
   document.querySelectorAll('.staff-name').forEach((inp,i)=> inp.oninput = ()=>{ currentDay.shifts[i].name = inp.value; });
-  document.querySelectorAll('.staff-timein').forEach((inp,i)=> inp.oninput = ()=>{
-    currentDay.shifts[i].timeIn = inp.value;
-    currentDay.shifts[i].hours = getShiftHours(currentDay.shifts[i]);
-    updateDayComputedUI();
-  });
-  document.querySelectorAll('.staff-timeout').forEach((inp,i)=> inp.oninput = ()=>{
-    currentDay.shifts[i].timeOut = inp.value;
-    currentDay.shifts[i].hours = getShiftHours(currentDay.shifts[i]);
-    updateDayComputedUI();
-  });
-
   document.getElementById('addExpenseBtn').onclick = ()=>{
     currentDay.expenses.push({description:'', amount:'', category:'Other'});
     renderDayTab();
@@ -307,6 +319,10 @@ function renderDayTab(){
     tr.querySelector('.in-added').oninput = (ev)=>{ e.added = ev.target.value; updateDayComputedUI(); };
     tr.querySelector('.in-closing').oninput = (ev)=>{ e.closing = ev.target.value; updateDayComputedUI(); };
   });
+
+  document.getElementById('stockRecordedAt').oninput = (ev)=>{
+    currentDay.stockRecordedAt = ev.target.value ? new Date(ev.target.value).toISOString() : null;
+  };
 
   ['openingCash','closingCash','mpesaCashIn'].forEach(id=>{
     document.getElementById(id).oninput = (ev)=>{ currentDay.cash[id] = ev.target.value; updateDayComputedUI(); };

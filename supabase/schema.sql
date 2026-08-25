@@ -44,6 +44,8 @@ create index if not exists idx_day_shifts_date on day_shifts(day_date);
 -- file on an existing project is safe and just adds the two columns.
 alter table day_shifts add column if not exists time_in time;
 alter table day_shifts add column if not exists time_out time;
+alter table day_shifts add column if not exists time_in_at timestamptz;
+alter table day_shifts add column if not exists time_out_at timestamptz;
 
 -- Stock movement, one row per item per day.
 create table if not exists stock_entries (
@@ -53,8 +55,10 @@ create table if not exists stock_entries (
   opening numeric not null default 0,
   added numeric not null default 0,
   closing numeric not null default 0,
+  recorded_at timestamptz,
   unique (day_date, item_id)
 );
+alter table stock_entries add column if not exists recorded_at timestamptz;
 create index if not exists idx_stock_entries_date on stock_entries(day_date);
 
 -- Daily operating expenses (rent, transport, repairs, etc.), one row per
