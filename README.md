@@ -23,8 +23,9 @@ tier) — no login required, reachable from anywhere once deployed.
 - **Expenses** — logged right on the Day Sheet (rent, transport, repairs,
   etc.), automatically subtracted from Net Profit, and kept as a running
   record for reference.
-- **Stock Setup** — every item has a **fixed buying price and selling
-  price**, set once. Every day sheet reuses these automatically.
+- **Stock Setup** — items have fixed prices set once. Tobacco Snuff and Khat
+  use only a selling price; Liquor, Soft Drinks, Cigarettes and Nuts use both
+  buying and selling prices. Every day sheet reuses these automatically.
 - **Sales History** — every saved day, click through to reopen one.
 - **Balance Sheet** — cumulative profit/loss chart and totals, always
   current to the latest saved day.

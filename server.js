@@ -9,7 +9,8 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const CATEGORIES = ['Liquor', 'Tobacco Snuff', 'Khat', 'Soft Drinks'];
+const CATEGORIES = ['Liquor', 'Tobacco Snuff', 'Khat', 'Soft Drinks', 'Cigarettes', 'Nuts'];
+const SELLING_PRICE_ONLY_CATEGORIES = new Set(['Tobacco Snuff', 'Khat']);
 
 function isNonNegativeNumber(value) {
   return value !== '' && value != null && Number.isFinite(Number(value)) && Number(value) >= 0;
@@ -52,10 +53,16 @@ app.get('/api/categories', (req, res) => {
 
 app.post('/api/items', asyncRoute(async (req, res) => {
   const { name, category, buyingPrice, sellingPrice } = req.body;
-  if (!String(name || '').trim() || !isNonNegativeNumber(buyingPrice) || !isNonNegativeNumber(sellingPrice)) {
-    return res.status(400).json({ error: 'Enter a name and non-negative buying and selling prices' });
+  const buyingPriceValid = SELLING_PRICE_ONLY_CATEGORIES.has(category)
+    ? (buyingPrice == null || buyingPrice === '' || isNonNegativeNumber(buyingPrice))
+    : isNonNegativeNumber(buyingPrice);
+  if (!String(name || '').trim() || !buyingPriceValid || !isNonNegativeNumber(sellingPrice)) {
+    const priceMessage = SELLING_PRICE_ONLY_CATEGORIES.has(category)
+      ? 'Enter a name and non-negative selling price'
+      : 'Enter a name and non-negative buying and selling prices';
+    return res.status(400).json({ error: priceMessage });
   }
-  const item = await db.createItem({ name, category, buyingPrice, sellingPrice });
+  const item = await db.createItem({ name, category, buyingPrice: buyingPrice || 0, sellingPrice });
   res.status(201).json(item);
 }));
 

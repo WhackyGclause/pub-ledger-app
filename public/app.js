@@ -34,7 +34,8 @@ function getShiftHours(shift){
   return Number(shift.hours) || 0;
 }
 
-const CATEGORIES = ['Liquor','Tobacco Snuff','Khat','Soft Drinks'];
+const CATEGORIES = ['Liquor','Tobacco Snuff','Khat','Soft Drinks','Cigarettes','Nuts'];
+const SELLING_PRICE_ONLY_CATEGORIES = ['Tobacco Snuff','Khat'];
 const EXPENSE_CATEGORIES = ['Rent','Transport','Repairs','Supplies','Utilities','Wages/Advance','Other'];
 
 let inventory = [];
@@ -384,7 +385,7 @@ function renderInventoryTab(){
     <tr data-id="${it.id}">
       <td class="name-cell">${escapeHtml(it.name)}</td>
       <td><span class="category-tag">${it.category}</span></td>
-      <td class="computed">${fmt(it.buyingPrice)}</td>
+      <td class="computed">${SELLING_PRICE_ONLY_CATEGORIES.includes(it.category) ? '—' : fmt(it.buyingPrice)}</td>
       <td class="computed">${fmt(it.sellingPrice)}</td>
       <td><button class="btn danger small remove-item">Remove</button></td>
     </tr>
@@ -409,8 +410,8 @@ function renderInventoryTab(){
         <div class="field"><label>Category</label>
           <select id="newItemCat">${CATEGORIES.map(c=>`<option value="${c}">${c}</option>`).join('')}</select>
         </div>
-        <div class="field"><label>Buying price (fixed)</label><input type="number" id="newItemBuy" placeholder="Unit buying price"></div>
-        <div class="field"><label>Selling price (fixed)</label><input type="number" id="newItemSell" placeholder="Unit selling price"></div>
+        <div class="field" id="newItemBuyField"><label>Buying price (fixed)</label><input type="number" min="0" step="any" id="newItemBuy" placeholder="Unit buying price"></div>
+        <div class="field"><label>Selling price (fixed)</label><input type="number" min="0" step="any" id="newItemSell" placeholder="Unit selling price"></div>
       </div>
       <div class="row-actions">
         <button class="btn brass" id="addItemBtn">Add item</button>
@@ -429,14 +430,28 @@ function renderInventoryTab(){
     };
   });
 
+  const buyingField = document.getElementById('newItemBuyField');
+  const buyingInput = document.getElementById('newItemBuy');
+  const categoryInput = document.getElementById('newItemCat');
+  const updateBuyingPriceField = ()=>{
+    const sellingOnly = SELLING_PRICE_ONLY_CATEGORIES.includes(categoryInput.value);
+    buyingField.style.display = sellingOnly ? 'none' : '';
+    buyingInput.value = sellingOnly ? '0' : buyingInput.value;
+    buyingInput.required = !sellingOnly;
+  };
+  categoryInput.onchange = updateBuyingPriceField;
+  updateBuyingPriceField();
+
   document.getElementById('addItemBtn').onclick = async ()=>{
     const name = document.getElementById('newItemName').value.trim();
-    const category = document.getElementById('newItemCat').value;
-    const buyingPrice = document.getElementById('newItemBuy').value;
+    const category = categoryInput.value;
+    const buyingPrice = SELLING_PRICE_ONLY_CATEGORIES.includes(category) ? '0' : buyingInput.value;
     const sellingPrice = document.getElementById('newItemSell').value;
     const statusEl = document.getElementById('invSaveStatus');
-    if(!name || buyingPrice==='' || sellingPrice==='' || Number(buyingPrice)<0 || Number(sellingPrice)<0){
-      statusEl.textContent = 'Enter a name and non-negative buying and selling prices.';
+    if(!name || (!SELLING_PRICE_ONLY_CATEGORIES.includes(category) && (buyingPrice==='' || Number(buyingPrice)<0)) || sellingPrice==='' || Number(sellingPrice)<0){
+      statusEl.textContent = SELLING_PRICE_ONLY_CATEGORIES.includes(category)
+        ? 'Enter a name and non-negative selling price.'
+        : 'Enter a name and non-negative buying and selling prices.';
       return;
     }
     statusEl.textContent = 'Saving…';
