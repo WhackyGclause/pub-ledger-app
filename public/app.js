@@ -141,15 +141,15 @@ function computeDayTotals(day, debtDay){
   const totalExpenses = (day.expenses||[]).reduce((s,e)=> s + (Number(e.amount)||0), 0);
   const netProfit = totalRevenue - totalCost - totalExpenses;
 
-  const cash = day.cash || {openingCash:0,closingCash:0,openingMomo:0,closingMomo:0};
-  const actualInflow = ((Number(cash.closingCash)||0) - (Number(cash.openingCash)||0)) + ((Number(cash.closingMomo)||0) - (Number(cash.openingMomo)||0));
+  const cash = day.cash || {openingCash:0,closingCash:0,mpesaCashIn:0};
+  const actualInflow = ((Number(cash.closingCash)||0) - (Number(cash.openingCash)||0)) + (Number(cash.mpesaCashIn)||0);
 
   const newCredit = Number(debtDay.newCredit)||0;
   const repayments = Number(debtDay.repayments)||0;
   const expectedInflow = totalRevenue - newCredit + repayments - totalExpenses;
   const discrepancy = actualInflow - expectedInflow;
 
-  const totalBalance = (Number(cash.closingCash)||0) + (Number(cash.closingMomo)||0);
+  const totalBalance = Number(cash.closingCash)||0;
   const totalHours = (day.shifts||[]).reduce((s,p)=> s + getShiftHours(p), 0);
   return {lines, totalRevenue, totalCost, totalExpenses, netProfit, newCredit, repayments, expectedInflow, actualInflow, discrepancy, totalBalance, totalHours};
 }
@@ -220,12 +220,11 @@ function renderDayTab(){
     </div>
 
     <div class="card">
-      <h2><span class="eyebrow">Till</span> Cash &amp; mobile money</h2>
+      <h2><span class="eyebrow">Till</span> Cash &amp; M-Pesa</h2>
       <div class="grid-2">
         <div class="field"><label>Opening cash</label><input type="number" id="openingCash" value="${currentDay.cash.openingCash||0}" onfocus="this.select()"></div>
         <div class="field"><label>Closing cash</label><input type="number" id="closingCash" value="${currentDay.cash.closingCash||0}" onfocus="this.select()"></div>
-        <div class="field"><label>Opening mobile money</label><input type="number" id="openingMomo" value="${currentDay.cash.openingMomo||0}" onfocus="this.select()"></div>
-        <div class="field"><label>Closing mobile money</label><input type="number" id="closingMomo" value="${currentDay.cash.closingMomo||0}" onfocus="this.select()"></div>
+        <div class="field"><label>M-Pesa cash in from messages</label><input type="number" min="0" id="mpesaCashIn" value="${currentDay.cash.mpesaCashIn||0}" onfocus="this.select()"></div>
       </div>
     </div>
 
@@ -249,8 +248,8 @@ function renderDayTab(){
         <div class="summary-item"><div class="label">New credit given</div><div class="value" id="newCreditVal">${fmt(totals.newCredit)}</div></div>
         <div class="summary-item"><div class="label">Credit repaid today</div><div class="value" id="repaymentsVal">${fmt(totals.repayments)}</div></div>
         <div class="summary-item"><div class="label">Expected collections</div><div class="value" id="expectedInflowVal">${fmt(totals.expectedInflow)}</div></div>
-        <div class="summary-item"><div class="label">Cash+MoMo collected</div><div class="value" id="actualInflowVal">${fmt(totals.actualInflow)}</div></div>
-        <div class="summary-item"><div class="label">Total balance (till)</div><div class="value" id="totalBalanceVal">${fmt(totals.totalBalance)}</div></div>
+        <div class="summary-item"><div class="label">Cash + M-Pesa collected</div><div class="value" id="actualInflowVal">${fmt(totals.actualInflow)}</div></div>
+        <div class="summary-item"><div class="label">Closing cash balance</div><div class="value" id="totalBalanceVal">${fmt(totals.totalBalance)}</div></div>
         <div class="summary-item"><div class="label">Discrepancy</div><div class="value ${totals.discrepancy<0?'neg':(totals.discrepancy>0?'':'pos')}" id="discrepancyVal">${fmt(totals.discrepancy)}</div></div>
       </div>
       <div class="stamp-wrap" id="stampWrap"><div class="stamp ${discClass}">${discLabel}</div></div>
@@ -309,7 +308,7 @@ function renderDayTab(){
     tr.querySelector('.in-closing').oninput = (ev)=>{ e.closing = ev.target.value; updateDayComputedUI(); };
   });
 
-  ['openingCash','closingCash','openingMomo','closingMomo'].forEach(id=>{
+  ['openingCash','closingCash','mpesaCashIn'].forEach(id=>{
     document.getElementById(id).oninput = (ev)=>{ currentDay.cash[id] = ev.target.value; updateDayComputedUI(); };
   });
 

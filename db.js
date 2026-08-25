@@ -74,7 +74,7 @@ function blankDay(date) {
   return {
     date,
     shifts: [],
-    cash: { openingCash: 0, closingCash: 0, openingMomo: 0, closingMomo: 0 },
+    cash: { openingCash: 0, closingCash: 0, mpesaCashIn: 0 },
     stock: {},
     expenses: []
   };
@@ -104,8 +104,7 @@ async function getDay(date) {
     day.cash = {
       openingCash: Number(cashRes.data.opening_cash),
       closingCash: Number(cashRes.data.closing_cash),
-      openingMomo: Number(cashRes.data.opening_momo),
-      closingMomo: Number(cashRes.data.closing_momo)
+      mpesaCashIn: Number(cashRes.data.mpesa_cash_in) || 0
     };
   }
 
@@ -168,14 +167,13 @@ async function saveDay(date, payload) {
     if (insExpenses.error) throw insExpenses.error;
   }
 
-  // Upsert cash/mobile money for the day.
+  // Upsert cash and M-Pesa inflow for the day.
   const cashUpsert = await supabase.from('day_cash').upsert(
     {
       day_date: date,
       opening_cash: Number(cash.openingCash) || 0,
       closing_cash: Number(cash.closingCash) || 0,
-      opening_momo: Number(cash.openingMomo) || 0,
-      closing_momo: Number(cash.closingMomo) || 0
+      mpesa_cash_in: Number(cash.mpesaCashIn) || 0
     },
     { onConflict: 'day_date' }
   );

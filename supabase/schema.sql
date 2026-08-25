@@ -19,8 +19,16 @@ create table if not exists day_cash (
   opening_cash numeric not null default 0,
   closing_cash numeric not null default 0,
   opening_momo numeric not null default 0,
-  closing_momo numeric not null default 0
+  closing_momo numeric not null default 0,
+  mpesa_cash_in numeric not null default 0
 );
+
+-- M-Pesa is recorded as the day's cash-in total from transaction messages,
+-- not as an opening/closing account balance.
+alter table day_cash add column if not exists mpesa_cash_in numeric not null default 0;
+update day_cash
+set mpesa_cash_in = closing_momo - opening_momo
+where mpesa_cash_in = 0 and (opening_momo <> 0 or closing_momo <> 0);
 
 -- Staff shifts, multiple rows per day.
 create table if not exists day_shifts (

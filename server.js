@@ -174,7 +174,7 @@ function computeSummary(day, items, debtDay) {
   const cash = day.cash || {};
   const actualInflow =
     ((Number(cash.closingCash) || 0) - (Number(cash.openingCash) || 0)) +
-    ((Number(cash.closingMomo) || 0) - (Number(cash.openingMomo) || 0));
+    (Number(cash.mpesaCashIn) || 0);
 
   // Expected till movement: what should have come in, given today's stock
   // sales, minus new credit sales (no cash received yet), plus any debt
@@ -185,7 +185,7 @@ function computeSummary(day, items, debtDay) {
   const expectedInflow = totalRevenue - newCredit + repayments - totalExpenses;
   const discrepancy = actualInflow - expectedInflow;
 
-  const totalBalance = (Number(cash.closingCash) || 0) + (Number(cash.closingMomo) || 0);
+  const totalBalance = Number(cash.closingCash) || 0;
   const totalHours = (day.shifts || []).reduce((s, p) => s + (Number(p.hours) || 0), 0);
   return {
     date: day.date,

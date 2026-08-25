@@ -11,9 +11,9 @@ tier) — no login required, reachable from anywhere once deployed.
   time** (hours worked are calculated automatically, including overnight
   shifts), opening/added/closing stock for every counter item (liquor, both
   snuff types, khat, soft drinks), daily expenses, and opening/closing cash
-  and mobile money. Revenue, cost, expenses, net profit and total balance
+  and M-Pesa cash-in messages. Revenue, cost, expenses, net profit and cash balance
   are calculated automatically.
-- **Discrepancy stamp** — compares cash+mobile money actually collected
+- **Discrepancy stamp** — compares cash+M-Pesa actually collected
   against what's *expected* (stock sold, minus any new customer credit given,
   plus any debt repayments received, minus expenses paid from the till), and
   marks the day **Balanced**, **Shortfall**, or **Over** — your loss/theft
@@ -36,7 +36,7 @@ tier) — no login required, reachable from anywhere once deployed.
 ```
 Net Profit          = Stock Revenue − Stock Cost − Expenses
 Expected Collections = Stock Revenue − New Credit Given + Credit Repaid − Expenses
-Discrepancy          = (Actual Cash+MoMo Collected) − Expected Collections
+Discrepancy          = (Actual Cash+M-Pesa Collected) − Expected Collections
 ```
 
 This assumes daily expenses are paid out of the same till (cash/mobile
