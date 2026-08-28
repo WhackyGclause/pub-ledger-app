@@ -261,6 +261,49 @@ async function saveDay(date, payload) {
   return getDay(date);
 }
 
+async function saveDailyRecord(summary) {
+  const { data, error } = await supabase
+    .from('daily_records')
+    .upsert({
+      day_date: summary.date,
+      total_income: Number(summary.totalRevenue) || 0,
+      total_cost: Number(summary.totalCost) || 0,
+      total_expenses: Number(summary.totalExpenses) || 0,
+      net_profit: Number(summary.netProfit) || 0,
+      loss_amount: Math.max(0, -(Number(summary.netProfit) || 0)),
+      recorded_at: new Date().toISOString()
+    }, { onConflict: 'day_date' })
+    .select()
+    .single();
+  if (error) throw error;
+  return {
+    date: data.day_date,
+    totalIncome: Number(data.total_income),
+    totalCost: Number(data.total_cost),
+    totalExpenses: Number(data.total_expenses),
+    netProfit: Number(data.net_profit),
+    lossAmount: Number(data.loss_amount),
+    recordedAt: data.recorded_at
+  };
+}
+
+async function listDailyRecords() {
+  const { data, error } = await supabase
+    .from('daily_records')
+    .select('*')
+    .order('day_date', { ascending: true });
+  if (error) throw error;
+  return (data || []).map(row => ({
+    date: row.day_date,
+    totalIncome: Number(row.total_income),
+    totalCost: Number(row.total_cost),
+    totalExpenses: Number(row.total_expenses),
+    netProfit: Number(row.net_profit),
+    lossAmount: Number(row.loss_amount),
+    recordedAt: row.recorded_at
+  }));
+}
+
 async function listAllDayDates() {
   const [c, s, st] = await Promise.all([
     supabase.from('day_cash').select('day_date'),
@@ -368,6 +411,8 @@ module.exports = {
   deleteItem,
   getDay,
   saveDay,
+  saveDailyRecord,
+  listDailyRecords,
   listAllDayDates,
   listDebts,
   createDebt,

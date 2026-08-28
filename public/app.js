@@ -133,10 +133,11 @@ async function saveDay(){
   const statusEl = document.getElementById('saveStatus');
   if(statusEl) statusEl.textContent = 'Saving…';
   try{
-    currentDay = await apiPut('/days/'+currentDay.date, currentDay);
+    const result = await apiPut('/days/'+currentDay.date, currentDay);
+    currentDay = result.day;
     renderDayTab();
     const savedStatusEl = document.getElementById('saveStatus');
-    if(savedStatusEl) savedStatusEl.textContent = 'Stock closed and saved ✓ ' + displayDateTime(currentDay.stockRecordedAt);
+    if(savedStatusEl) savedStatusEl.textContent = 'Daily income and profit recorded ✓ ' + displayDateTime(currentDay.stockRecordedAt);
   }catch(e){
     if(statusEl) statusEl.textContent = 'Save failed — ' + e.message;
   }
@@ -155,12 +156,11 @@ function computeDayTotals(day, debtDay){
     totalCost += cost;
     return {item:it, e, sold, revenue, cost};
   });
-  const totalExpenses = (day.expenses||[]).reduce((s,e)=> s + (Number(e.amount)||0), 0);
-  const netProfit = totalRevenue - totalCost - totalExpenses;
-
   const cash = day.cash || {openingCash:0,closingCash:0,mpesaCashIn:0,poolGames:0,poolRate:20,openingPoolCoins:0,closingPoolCoins:0,poolCoinExchanges:0};
   const poolRevenue = (Number(cash.poolGames)||0) * (Number(cash.poolRate)||0);
   totalRevenue += poolRevenue;
+  const totalExpenses = (day.expenses||[]).reduce((s,e)=> s + (Number(e.amount)||0), 0);
+  const netProfit = totalRevenue - totalCost - totalExpenses;
   const actualInflow = ((Number(cash.closingCash)||0) - (Number(cash.openingCash)||0)) + (Number(cash.mpesaCashIn)||0);
 
   const newCredit = Number(debtDay.newCredit)||0;
@@ -617,20 +617,29 @@ async function renderDebtsTab(){
 async function renderHistoryTab(){
   const el = document.getElementById('historyTab');
   el.innerHTML = '<div class="loading">Loading sales records…</div>';
-  const days = await apiGet('/days');
+  const [days, savedRecords] = await Promise.all([apiGet('/days'), apiGet('/daily-records')]);
   if(days.length===0){
     el.innerHTML = '<div class="card"><div class="empty-note">No days recorded yet. Save a Day Sheet to see it here.</div></div>';
     return;
   }
+  const recordsByDate = Object.fromEntries(savedRecords.map(record=>[record.date, record]));
   const rowsHtml = days.slice().reverse().map(t=>{
+    const record = recordsByDate[t.date];
+    const income = record ? record.totalIncome : t.totalRevenue;
+    const cost = record ? record.totalCost : t.totalCost;
+    const expenses = record ? record.totalExpenses : t.totalExpenses;
+    const profit = record ? record.netProfit : t.netProfit;
+    const loss = record ? record.lossAmount : Math.max(0, -t.netProfit);
     const statusClass = Math.abs(t.discrepancy)<1 ? 'ok' : (t.discrepancy<0 ? 'bad' : 'over');
     const statusLabel = Math.abs(t.discrepancy)<1 ? 'Balanced' : (t.discrepancy<0 ? 'Shortfall' : 'Over');
     return `<tr class="history-row" data-date="${t.date}">
       <td class="name-cell">${t.date}</td>
       <td>${t.staffCount}</td>
-      <td>${fmt(t.totalRevenue)}</td>
-      <td>${fmt(t.totalExpenses)}</td>
-      <td class="${t.netProfit<0?'neg':''}">${fmt(t.netProfit)}</td>
+      <td>${fmt(income)}</td>
+      <td>${fmt(cost)}</td>
+      <td>${fmt(expenses)}</td>
+      <td class="${profit<0?'neg':''}">${fmt(profit)}</td>
+      <td class="${loss>0?'neg':''}">${fmt(loss)}</td>
       <td>${fmt(t.totalBalance)}</td>
       <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
     </tr>`;
@@ -638,10 +647,10 @@ async function renderHistoryTab(){
 
   el.innerHTML = `
     <div class="card">
-      <h2><span class="eyebrow">Records</span> Day-by-day sales</h2>
+      <h2><span class="eyebrow">Records</span> Daily income and profit/loss</h2>
       <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>Date</th><th>Staff</th><th>Revenue</th><th>Expenses</th><th>Net profit</th><th>Total balance</th><th>Status</th></tr></thead>
+        <thead><tr><th>Date</th><th>Staff</th><th>Income</th><th>Cost</th><th>Expenses</th><th>Profit</th><th>Loss</th><th>Total balance</th><th>Status</th></tr></thead>
         <tbody>${rowsHtml}</tbody>
       </table>
       </div>

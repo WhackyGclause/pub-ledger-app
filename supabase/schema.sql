@@ -105,6 +105,19 @@ create table if not exists debt_payments (
 create index if not exists idx_debt_payments_debt on debt_payments(debt_id);
 create index if not exists idx_debt_payments_date on debt_payments(date_paid);
 
+-- Daily income and profit/loss snapshots. This is separate from the ledger
+-- tables above, so recording a summary does not change their existing rows.
+create table if not exists daily_records (
+  day_date date primary key,
+  total_income numeric not null default 0,
+  total_cost numeric not null default 0,
+  total_expenses numeric not null default 0,
+  net_profit numeric not null default 0,
+  loss_amount numeric not null default 0,
+  recorded_at timestamptz not null default now()
+);
+alter table daily_records enable row level security;
+
 -- Row Level Security: ON, with NO public policies.
 -- Only the secret service_role key (used by your backend only, never the
 -- browser) can bypass RLS and read/write. This keeps the database locked

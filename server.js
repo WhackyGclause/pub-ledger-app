@@ -97,7 +97,12 @@ app.put('/api/days/:date', asyncRoute(async (req, res) => {
   if (cashValues.some(value => !isNonNegativeNumber(value))) {
     return res.status(400).json({ error: 'Cash values must be non-negative numbers' });
   }
-  res.json(await db.saveDay(req.params.date, req.body));
+  const day = await db.saveDay(req.params.date, req.body);
+  const items = await db.listItems();
+  const debtDayMap = await db.getDebtDayMap();
+  const summary = computeSummary(day, items, debtDayMap[req.params.date]);
+  const record = await db.saveDailyRecord(summary);
+  res.json({ day, record });
 }));
 
 app.get('/api/days', asyncRoute(async (req, res) => {
@@ -108,6 +113,10 @@ app.get('/api/days', asyncRoute(async (req, res) => {
     summaries.push(computeSummary(day, items, debtDayMap[date]));
   }
   res.json(summaries);
+}));
+
+app.get('/api/daily-records', asyncRoute(async (req, res) => {
+  res.json(await db.listDailyRecords());
 }));
 
 // ---------------------------------------------------------------------
