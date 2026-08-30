@@ -511,8 +511,9 @@ async function renderDebtsTab(){
     <tr class="pay-row" data-payrow="${d.id}" style="display:none;"><td colspan="7">
       <div class="grid-2" style="margin:6px 0;">
         <div class="field"><label>Payment amount</label><input type="number" class="pay-amount" min="0" onfocus="this.select()"></div>
-        <div class="field"><label>Date paid</label><input type="date" class="pay-date" value="${todayStr()}"></div>
+        <div class="field"><label>Payment date</label><input type="date" class="pay-date" value="${todayStr()}"></div>
       </div>
+      <p class="save-status" style="margin:6px 0 10px;">This payment is recorded against the debt’s original credit date: <strong>${d.dateIncurred}</strong>. It does not alter that day’s sales discrepancy.</p>
       <button class="btn brass small submit-payment-btn">Record payment</button>
       <span class="save-status pay-status"></span>
     </td></tr>
@@ -547,11 +548,11 @@ async function renderDebtsTab(){
       <h2><span class="eyebrow">Ledger</span> All customer credit</h2>
       <div style="overflow-x:auto;">
       <table>
-        <thead><tr><th>Customer</th><th>Date</th><th>Original</th><th>Paid</th><th>Outstanding</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Customer</th><th>Credit date</th><th>Original</th><th>Paid</th><th>Outstanding</th><th>Status</th><th></th></tr></thead>
         <tbody id="debtsBody">${rows}</tbody>
       </table>
       </div>
-      <p class="save-status" style="margin-top:10px;">New credit given and repayments received automatically adjust the Day Sheet's expected cash so a tab sale isn't mistaken for a shortfall.</p>
+      <p class="save-status" style="margin-top:10px;">Debt repayments are applied to the original credit date, not the payment date, so the sales-day discrepancy stays based only on that day’s actual till activity.</p>
     </div>
   `;
 

@@ -206,8 +206,8 @@ function computeSummary(day, items, debtDay) {
 
   // Expected till movement: what should have come in, given today's stock
   // sales, minus new credit sales (no cash received yet), plus any debt
-  // repayments collected today (cash in, unrelated to today's stock), minus
-  // expenses paid out of the till today.
+  // repayments assigned to this debt day (cash from credit already given),
+  // minus expenses paid out of the till today.
   const newCredit = Number(debtDay.newCredit) || 0;
   const repayments = Number(debtDay.repayments) || 0;
   const expectedInflow = totalRevenue - newCredit + repayments - totalExpenses;

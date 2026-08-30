@@ -389,18 +389,30 @@ async function deleteDebt(id) {
 
 // Builds a { date -> {newCredit, repayments} } map across ALL dates in one
 // pass, so day-list/balance-sheet routes don't need one query per date.
+// IMPORTANT: repayments are assigned to the original credit date, not the
+// actual payment date. This keeps a debt payment from distorting the day the
+// cash was collected in the till, and instead offsets the debt day it was given.
 async function getDebtDayMap() {
   const [debtsRes, paymentsRes] = await Promise.all([
-    supabase.from('debts').select('date_incurred, original_amount'),
-    supabase.from('debt_payments').select('date_paid, amount')
+    supabase.from('debts').select('id, date_incurred, original_amount'),
+    supabase.from('debt_payments').select('debt_id, amount')
   ]);
   if (debtsRes.error) throw debtsRes.error;
   if (paymentsRes.error) throw paymentsRes.error;
 
+  const debtDates = {};
+  (debtsRes.data || []).forEach(r => {
+    debtDates[r.id] = r.date_incurred;
+  });
+
   const map = {};
   const ensure = date => (map[date] = map[date] || { newCredit: 0, repayments: 0 });
   (debtsRes.data || []).forEach(r => { ensure(r.date_incurred).newCredit += Number(r.original_amount); });
-  (paymentsRes.data || []).forEach(r => { ensure(r.date_paid).repayments += Number(r.amount); });
+  (paymentsRes.data || []).forEach(r => {
+    const debtDate = debtDates[r.debt_id];
+    if (!debtDate) return;
+    ensure(debtDate).repayments += Number(r.amount);
+  });
   return map;
 }
 
