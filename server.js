@@ -205,8 +205,8 @@ function computeSummary(day, items, debtDay) {
     (Number(cash.mpesaCashIn) || 0);
 
   // Expected till movement: what should have come in, given today's stock
-  // sales, minus new credit sales (no cash received yet), plus any debt
-  // repayments assigned to this debt day (cash from credit already given),
+  // sales, minus net credit sales (no cash received yet), plus any debt
+  // repayments assigned to this debt day after same-day cancellation,
   // minus expenses paid out of the till today.
   const newCredit = Number(debtDay.newCredit) || 0;
   const repayments = Number(debtDay.repayments) || 0;

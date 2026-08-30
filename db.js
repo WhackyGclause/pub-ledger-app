@@ -392,6 +392,8 @@ async function deleteDebt(id) {
 // IMPORTANT: repayments are assigned to the original credit date, not the
 // actual payment date. This keeps a debt payment from distorting the day the
 // cash was collected in the till, and instead offsets the debt day it was given.
+// If a debt is both given and repaid on the same date, the net effect is zero
+// for that date's discrepancy calculation; only the surplus side remains.
 async function getDebtDayMap() {
   const [debtsRes, paymentsRes] = await Promise.all([
     supabase.from('debts').select('id, date_incurred, original_amount'),
@@ -407,12 +409,26 @@ async function getDebtDayMap() {
 
   const map = {};
   const ensure = date => (map[date] = map[date] || { newCredit: 0, repayments: 0 });
+
   (debtsRes.data || []).forEach(r => { ensure(r.date_incurred).newCredit += Number(r.original_amount); });
   (paymentsRes.data || []).forEach(r => {
     const debtDate = debtDates[r.debt_id];
     if (!debtDate) return;
     ensure(debtDate).repayments += Number(r.amount);
   });
+
+  Object.keys(map).forEach(date => {
+    const day = map[date];
+    const net = (Number(day.newCredit) || 0) - (Number(day.repayments) || 0);
+    if (net >= 0) {
+      day.newCredit = net;
+      day.repayments = 0;
+    } else {
+      day.newCredit = 0;
+      day.repayments = Math.abs(net);
+    }
+  });
+
   return map;
 }
 
