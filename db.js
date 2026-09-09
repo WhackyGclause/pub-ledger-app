@@ -389,11 +389,9 @@ async function deleteDebt(id) {
 
 // Builds a { date -> {newCredit, repayments} } map across ALL dates in one
 // pass, so day-list/balance-sheet routes don't need one query per date.
-// IMPORTANT: repayments are assigned to the original credit date, not the
-// actual payment date. This keeps a debt payment from distorting the day the
-// cash was collected in the till, and instead offsets the debt day it was given.
-// If a debt is both given and repaid on the same date, the net effect is zero
-// for that date's discrepancy calculation; only the surplus side remains.
+// IMPORTANT: repayments are assigned to the original credit date for display,
+// but they do not change that day's sales reconciliation. The credit amount
+// already represents the till activity recorded for that day.
 async function getDebtDayMap() {
   const [debtsRes, paymentsRes] = await Promise.all([
     supabase.from('debts').select('id, date_incurred, original_amount'),
@@ -415,18 +413,6 @@ async function getDebtDayMap() {
     const debtDate = debtDates[r.debt_id];
     if (!debtDate) return;
     ensure(debtDate).repayments += Number(r.amount);
-  });
-
-  Object.keys(map).forEach(date => {
-    const day = map[date];
-    const net = (Number(day.newCredit) || 0) - (Number(day.repayments) || 0);
-    if (net >= 0) {
-      day.newCredit = net;
-      day.repayments = 0;
-    } else {
-      day.newCredit = 0;
-      day.repayments = Math.abs(net);
-    }
   });
 
   return map;

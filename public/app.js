@@ -165,7 +165,7 @@ function computeDayTotals(day, debtDay){
 
   const newCredit = Number(debtDay.newCredit)||0;
   const repayments = Number(debtDay.repayments)||0;
-  const expectedInflow = totalRevenue - newCredit + repayments - totalExpenses;
+  const expectedInflow = totalRevenue - newCredit - totalExpenses;
   const discrepancy = actualInflow - expectedInflow;
 
   const totalBalance = Number(cash.closingCash)||0;

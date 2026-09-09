@@ -204,13 +204,12 @@ function computeSummary(day, items, debtDay) {
     ((Number(cash.closingCash) || 0) - (Number(cash.openingCash) || 0)) +
     (Number(cash.mpesaCashIn) || 0);
 
-  // Expected till movement: what should have come in, given today's stock
-  // sales, minus net credit sales (no cash received yet), plus any debt
-  // repayments assigned to this debt day after same-day cancellation,
-  // minus expenses paid out of the till today.
+  // Expected till movement: credit is already represented by the day's
+  // recorded till activity, so repayments only change the debt balance and
+  // must not be counted again in this day's reconciliation.
   const newCredit = Number(debtDay.newCredit) || 0;
   const repayments = Number(debtDay.repayments) || 0;
-  const expectedInflow = totalRevenue - newCredit + repayments - totalExpenses;
+  const expectedInflow = totalRevenue - newCredit - totalExpenses;
   const discrepancy = actualInflow - expectedInflow;
 
   const totalBalance = Number(cash.closingCash) || 0;
